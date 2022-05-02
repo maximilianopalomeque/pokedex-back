@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 
 const api_url = "https://pokeapi.co/api/v2/pokemon/?offset=0&limit=150";
 
-const Pokemon = require("../../models/pokemonSchema");
+const Pokemon = require("../models/pokemonSchema");
 
 const getUrls = async () => {
   let response;
@@ -72,9 +72,7 @@ const getAndSaveAllPokemonData = async () => {
 };
 
 mongoose
-  .connect(
-    "mongodb+srv://maximilianopalomeque:PEQbdWJWk4mNxMXQ@cluster0.jd4it.mongodb.net/pokedex150?retryWrites=true&w=majority"
-  )
+  .connect(process.env.DB_URL)
   .then(() => {
     console.log("connected to db");
     getAndSaveAllPokemonData();
