@@ -33,3 +33,5 @@ mongoose
   .catch((error) => {
     console.log(error);
   });
+
+app.listen(process.env.PORT);

@@ -3,30 +3,16 @@ const mongoose = require("mongoose");
 
 const api_url = "https://pokeapi.co/api/v2/pokemon/?offset=0&limit=150";
 
-const Pokemon = require("../../models/pokemonSchema");
+const Pokemon = require("../models/pokemonSchema");
 
 const getUrls = async () => {
-  let response;
-  try {
-    response = await axios(api_url);
-  } catch (error) {
-    console.log(error);
-    return;
-  }
-
-  return response.data.results;
+  const response = await axios(api_url);
+  return response?.data?.results;
 };
 
 const getDescription = async (descriptionUrl) => {
-  let response;
-  try {
-    response = await axios(descriptionUrl);
-  } catch (error) {
-    console.log("could not find description");
-    return;
-  }
-
-  return response.data.flavor_text_entries[9].flavor_text;
+  const response = await axios(descriptionUrl);
+  return response?.data?.flavor_text_entries[9]?.flavor_text;
 };
 
 const getAndSaveAllPokemonData = async () => {
@@ -36,7 +22,7 @@ const getAndSaveAllPokemonData = async () => {
     return;
   }
 
-  for (const url of urls) {
+  urls.forEach( url => {
     let response;
     try {
       response = await axios(url); // get data of one pokemon
@@ -45,9 +31,9 @@ const getAndSaveAllPokemonData = async () => {
       return;
     }
 
-    let description = await getDescription(response.data.species.url);
+    let description = await getDescription(response?.data?.species?.url);
     if (!description) {
-      console.log("failed to get description");
+      console.log("failed to get description for url:", url);
       description = "No description available";
     }
 
@@ -66,15 +52,13 @@ const getAndSaveAllPokemonData = async () => {
     } catch (error) {
       console.log("could not save pokemon", pokemon.name);
     }
-  }
+  });
 
   console.log("data saved");
 };
 
 mongoose
-  .connect(
-    "mongodb+srv://maximilianopalomeque:PEQbdWJWk4mNxMXQ@cluster0.jd4it.mongodb.net/pokedex150?retryWrites=true&w=majority"
-  )
+  .connect(process.env.DB_URL)
   .then(() => {
     console.log("connected to db");
     getAndSaveAllPokemonData();
