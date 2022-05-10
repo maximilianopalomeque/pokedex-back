@@ -1,7 +1,9 @@
+const dotenv = require("dotenv");
+dotenv.config({ path: "../.env" });
 const axios = require("axios");
 const mongoose = require("mongoose");
 
-const api_url = "https://pokeapi.co/api/v2/pokemon/?offset=0&limit=150";
+const api_url = process.env.POKEMON_API_URL;
 
 const Pokemon = require("../models/pokemonSchema");
 
@@ -15,6 +17,11 @@ const getDescription = async (descriptionUrl) => {
   return response?.data?.flavor_text_entries[9]?.flavor_text;
 };
 
+const getGender = async (genderUrl) => {
+  const response = await axios(genderUrl);
+  return (response?.data?.gender_rate / 8) * 100; // gender are in eighths
+};
+
 const getAndSaveAllPokemonData = async () => {
   const urls = await getUrls();
   if (!urls) {
@@ -22,7 +29,7 @@ const getAndSaveAllPokemonData = async () => {
     return;
   }
 
-  urls.forEach( url => {
+  for (url of urls) {
     let response;
     try {
       response = await axios(url); // get data of one pokemon
@@ -37,14 +44,27 @@ const getAndSaveAllPokemonData = async () => {
       description = "No description available";
     }
 
+    let genderRate = await getGender(response?.data?.species?.url);
+    if (!genderRate) {
+      console.log("failed to get genderRate from url:", url);
+      genderRate = 0;
+    }
+
+    // height and weight are in hectograms
+    const weight = response.data.weight / 10;
+    const height = response.data.height / 10;
+
     const pokemon = new Pokemon({
-      id: response.data.id,
+      dexNumber: response.data.id,
       name: response.data.name,
-      description,
       types: response.data.types,
       abilities: response.data.abilities,
       stats: response.data.stats,
-      sprite: response.data.sprites.front_default,
+      image: response.data.sprites.front_default,
+      description,
+      weight,
+      height,
+      genderRate,
     });
 
     try {
@@ -52,7 +72,7 @@ const getAndSaveAllPokemonData = async () => {
     } catch (error) {
       console.log("could not save pokemon", pokemon.name);
     }
-  });
+  }
 
   console.log("data saved");
 };
@@ -67,11 +87,3 @@ mongoose
     console.log("could not connect to db");
     console.log(error);
   });
-
-// id
-// name
-// sprite
-// description
-// types
-// abilities
-// stats
